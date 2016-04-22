@@ -50,85 +50,115 @@ import {
 } from './title';
 
 import {
-  Widget, WidgetFlag
+  Widget, WidgetFlag, IPhosphorOptions
 } from './widget';
 
+declare module './widget' {
+  interface IPhosphorOptions {
+    tabBarOptions?: ITabBarOptions;
+  }
+}
 
 /**
- * The class name added to TabBar instances.
+ * Tab bar widget configuration type.
  */
-const TAB_BAR_CLASS = 'p-TabBar';
+export interface ITabBarOptions {
+  /**
+   * The class name added to TabBar instances.
+   */
+  tabBarClass?: string;
+
+  /**
+   * The class name added to a tab bar body node.
+   */
+  bodyClass?: string;
+
+  /**
+   * The class name added to a tab bar header node.
+   */
+  headerClass?: string;
+
+  /**
+   * The class name added to a tab bar content node.
+   */
+  contentClass?: string;
+
+  /**
+   * The class name added to a tab bar footer node.
+   */
+  footerClass?: string;
+
+  /**
+   * The class name added to a tab bar tab.
+   */
+  tabClass?: string;
+
+  /**
+   * The class name added to a tab text node.
+   */
+  textClass?: string;
+
+  /**
+   * The class name added to a tab icon node.
+   */
+  iconClass?: string;
+
+  /**
+   * The class name added to a tab close icon node.
+   */
+  closeIconClass?: string;
+
+  /**
+   * The class name added to a tab bar and tab when dragging.
+   */
+  draggingClass?: string;
+
+  /**
+   * The class name added to the current tab.
+   */
+  currentClass?: string;
+
+  /**
+   * The class name added to a closable tab.
+   */
+  closableClass?: string;
+
+  /**
+   * The start drag distance threshold.
+   */
+  dragThreshold?: number;
+
+  /**
+   * The detach distance threshold.
+   */
+  detachThreshold?: number;
+
+  /**
+   * The tab transition duration.
+   */
+  transitionDuration?: number;
+}
 
 /**
- * The class name added to a tab bar body node.
+ * Tab bar widget default configuration.
  */
-const BODY_CLASS = 'p-TabBar-body';
-
-/**
- * The class name added to a tab bar header node.
- */
-const HEADER_CLASS = 'p-TabBar-header';
-
-/**
- * The class name added to a tab bar content node.
- */
-const CONTENT_CLASS = 'p-TabBar-content';
-
-/**
- * The class name added to a tab bar footer node.
- */
-const FOOTER_CLASS = 'p-TabBar-footer';
-
-/**
- * The class name added to a tab bar tab.
- */
-const TAB_CLASS = 'p-TabBar-tab';
-
-/**
- * The class name added to a tab text node.
- */
-const TEXT_CLASS = 'p-TabBar-tabText';
-
-/**
- * The class name added to a tab icon node.
- */
-const ICON_CLASS = 'p-TabBar-tabIcon';
-
-/**
- * The class name added to a tab close icon node.
- */
-const CLOSE_ICON_CLASS = 'p-TabBar-tabCloseIcon';
-
-/**
- * The class name added to a tab bar and tab when dragging.
- */
-const DRAGGING_CLASS = 'p-mod-dragging';
-
-/**
- * The class name added to the current tab.
- */
-const CURRENT_CLASS = 'p-mod-current';
-
-/**
- * The class name added to a closable tab.
- */
-const CLOSABLE_CLASS = 'p-mod-closable';
-
-/**
- * The start drag distance threshold.
- */
-const DRAG_THRESHOLD = 5;
-
-/**
- * The detach distance threshold.
- */
-const DETACH_THRESHOLD = 20;
-
-/**
- * The tab transition duration.
- */
-const TRANSITION_DURATION = 150;  // Keep in sync with CSS.
-
+export const defaultTabBarOptions: ITabBarOptions = {
+  tabBarClass: 'p-TabBar',
+  bodyClass: 'p-TabBar-body',
+  headerClass: 'p-TabBar-header',
+  contentClass: 'p-TabBar-content',
+  footerClass: 'p-TabBar-footer',
+  tabClass: 'p-TabBar-tab',
+  textClass: 'p-TabBar-tabText',
+  iconClass: 'p-TabBar-tabIcon',
+  closeIconClass: 'p-TabBar-tabCloseIcon',
+  draggingClass: 'p-mod-dragging',
+  currentClass: 'p-mod-current',
+  closableClass: 'p-mod-closable',
+  dragThreshold: 5,
+  detachThreshold: 20,
+  transitionDuration: 150  // Keep in sync with CSS.
+};
 
 /**
  * The arguments object for the `currentChanged` signal.
@@ -229,34 +259,46 @@ interface ITabDetachArgs {
 export
 class TabBar extends Widget {
   /**
-   * Create the DOM node for a tab bar.
-   */
-  static createNode(): HTMLElement {
-    let node = document.createElement('div');
-    let header = document.createElement('div');
-    let body = document.createElement('div');
-    let footer = document.createElement('div');
-    let content = document.createElement('ul');
-    header.className = HEADER_CLASS;
-    body.className = BODY_CLASS;
-    footer.className = FOOTER_CLASS;
-    content.className = CONTENT_CLASS;
-    body.appendChild(content);
-    node.appendChild(header);
-    node.appendChild(body);
-    node.appendChild(footer);
-    return node;
-  }
-
-  /**
    * Construct a new tab bar.
    *
    * @param factory - The factory for creating new tab nodes.
+   * @param options - Phosphor widgets configuration.
    */
-  constructor(factory: ITabFactory = TabFactory.instance) {
+  constructor(factory?: ITabFactory, options: IPhosphorOptions = {}) {
     super();
-    this._factory = factory;
-    this.addClass(TAB_BAR_CLASS);
+    this._tabBarOptions = this.cloneOptions(options.tabBarOptions, defaultTabBarOptions);
+    this._factory = factory || new TabFactory(this._tabBarOptions);
+    this.addClass(this._tabBarOptions.tabBarClass);
+
+    let node = this.node;
+    let header = this.headerNode;
+    if(!header) {
+      header = document.createElement('div');
+      header.className = this._tabBarOptions.headerClass;
+      node.appendChild(header);
+    }
+
+    let body = this.bodyNode;
+    if(!body) {
+      body = document.createElement('div');
+      body.className = this._tabBarOptions.bodyClass;
+      node.appendChild(body);
+    }
+
+    let content = this.contentNode;
+    if(!content) {
+      content = document.createElement('ul');
+      content.className = this._tabBarOptions.contentClass;
+      body.appendChild(content);
+    }
+
+    let footer = this.footerNode;
+    if(!footer) {
+      footer = document.createElement('div');
+      footer.className = this._tabBarOptions.footerClass;
+      node.appendChild(footer);
+    }
+
     this.setFlag(WidgetFlag.DisallowLayout);
   }
 
@@ -326,7 +368,7 @@ class TabBar extends Widget {
    * This is a read-only property.
    */
   get headerNode(): HTMLElement {
-    return this.node.getElementsByClassName(HEADER_CLASS)[0] as HTMLElement;
+    return this.node.getElementsByClassName(this._tabBarOptions.headerClass)[0] as HTMLElement;
   }
 
   /**
@@ -338,7 +380,7 @@ class TabBar extends Widget {
    * This is a read-only property.
    */
   get bodyNode(): HTMLElement {
-    return this.node.getElementsByClassName(BODY_CLASS)[0] as HTMLElement;
+    return this.node.getElementsByClassName(this._tabBarOptions.bodyClass)[0] as HTMLElement;
   }
 
   /**
@@ -350,7 +392,7 @@ class TabBar extends Widget {
    * This is a read-only property.
    */
   get footerNode(): HTMLElement {
-    return this.node.getElementsByClassName(FOOTER_CLASS)[0] as HTMLElement;
+    return this.node.getElementsByClassName(this._tabBarOptions.footerClass)[0] as HTMLElement;
   }
 
   /**
@@ -364,7 +406,7 @@ class TabBar extends Widget {
    * This is a read-only property.
    */
   get contentNode(): HTMLElement {
-    return this.node.getElementsByClassName(CONTENT_CLASS)[0] as HTMLElement;
+    return this.node.getElementsByClassName(this._tabBarOptions.contentClass)[0] as HTMLElement;
   }
 
   /**
@@ -732,10 +774,10 @@ class TabBar extends Widget {
         factory.updateTab(tab, title);
       }
       if (title === currentTitle) {
-        tab.classList.add(CURRENT_CLASS);
+        tab.classList.add(this._tabBarOptions.currentClass);
         tab.style.zIndex = `${n}`;
       } else {
-        tab.classList.remove(CURRENT_CLASS);
+        tab.classList.remove(this._tabBarOptions.currentClass);
         tab.style.zIndex = `${n - i - 1}`;
       }
     }
@@ -864,7 +906,7 @@ class TabBar extends Widget {
       // Bail if the drag threshold is not exceeded.
       let dx = Math.abs(event.clientX - data.pressX);
       let dy = Math.abs(event.clientY - data.pressY);
-      if (dx < DRAG_THRESHOLD && dy < DRAG_THRESHOLD) {
+      if (dx < this._tabBarOptions.dragThreshold && dy < this._tabBarOptions.dragThreshold) {
         return;
       }
 
@@ -878,15 +920,15 @@ class TabBar extends Widget {
       data.override = overrideCursor('default');
 
       // Add the dragging style classes.
-      data.tab.classList.add(DRAGGING_CLASS);
-      this.addClass(DRAGGING_CLASS);
+      data.tab.classList.add(this._tabBarOptions.draggingClass);
+      this.addClass(this._tabBarOptions.draggingClass);
 
       // Mark the drag as active.
       data.dragActive = true;
     }
 
     // Emit the detach requested signal if the threshold is exceeded.
-    if (!data.detachRequested && Private.detachExceeded(data, event)) {
+    if (!data.detachRequested && Private.detachExceeded(data, event, this._tabBarOptions)) {
       // Only emit the signal once per drag cycle.
       data.detachRequested = true;
 
@@ -944,7 +986,7 @@ class TabBar extends Widget {
     Private.finalizeTabPosition(data);
 
     // Remove the dragging class from the tab so it can be transitioned.
-    data.tab.classList.remove(DRAGGING_CLASS);
+    data.tab.classList.remove(this._tabBarOptions.draggingClass);
 
     // Complete the release on a timer to allow the tab to transition.
     setTimeout(() => {
@@ -963,7 +1005,7 @@ class TabBar extends Widget {
       data.override.dispose();
 
       // Remove the remaining dragging style.
-      this.removeClass(DRAGGING_CLASS);
+      this.removeClass(this._tabBarOptions.draggingClass);
 
       // If the tab was not moved, there is nothing else to do.
       let i = data.index;
@@ -999,7 +1041,7 @@ class TabBar extends Widget {
 
       // Schedule an update of the tabs.
       this.update();
-    }, TRANSITION_DURATION);
+    }, this._tabBarOptions.transitionDuration);
   }
 
   /**
@@ -1037,8 +1079,8 @@ class TabBar extends Widget {
     data.override.dispose();
 
     // Clear the dragging style classes.
-    data.tab.classList.remove(DRAGGING_CLASS);
-    this.removeClass(DRAGGING_CLASS);
+    data.tab.classList.remove(this._tabBarOptions.draggingClass);
+    this.removeClass(this._tabBarOptions.draggingClass);
   }
 
   /**
@@ -1049,6 +1091,7 @@ class TabBar extends Widget {
     this.update();
   }
 
+  private _tabBarOptions: ITabBarOptions;
   private _currentIndex = -1;
   private _tabsMovable = false;
   private _factory: ITabFactory;
@@ -1122,6 +1165,15 @@ interface ITabFactory {
 export
 class TabFactory implements ITabFactory {
   /**
+   * Construct a new tab factory.
+   *
+   * @param options - Tab bar widget configuration.
+   */
+  constructor(options: ITabBarOptions) {
+    this._options = options;
+  }
+
+  /**
    * Create a node for a tab.
    *
    * @returns A new node for a tab.
@@ -1131,10 +1183,10 @@ class TabFactory implements ITabFactory {
     let icon = document.createElement('span');
     let text = document.createElement('span');
     let close = document.createElement('span');
-    node.className = TAB_CLASS;
-    icon.className = ICON_CLASS;
-    text.className = TEXT_CLASS;
-    close.className = CLOSE_ICON_CLASS;
+    node.className = this._options.tabClass;
+    icon.className = this._options.iconClass;
+    text.className = this._options.textClass;
+    close.className = this._options.closeIconClass;
     node.appendChild(icon);
     node.appendChild(text);
     node.appendChild(close);
@@ -1150,12 +1202,12 @@ class TabFactory implements ITabFactory {
    */
   updateTab(node: HTMLElement, title: Title): void {
     let tabInfix = title.className ? ` ${title.className}` : '';
-    let tabSuffix = title.closable ? ` ${CLOSABLE_CLASS}` : '';
+    let tabSuffix = title.closable ? ` ${this._options.closableClass}` : '';
     let iconSuffix = title.icon ? ` ${title.icon}` : '';
     let icon = node.firstChild as HTMLElement;
     let text = icon.nextSibling as HTMLElement;
-    node.className = `${TAB_CLASS} ${tabInfix} ${tabSuffix}`;
-    icon.className = `${ICON_CLASS} ${iconSuffix}`;
+    node.className = `${this._options.tabClass} ${tabInfix} ${tabSuffix}`;
+    icon.className = `${this._options.iconClass} ${iconSuffix}`;
     text.textContent = title.text;
     text.title = title.tooltip;
   }
@@ -1170,22 +1222,8 @@ class TabFactory implements ITabFactory {
   closeIcon(node: HTMLElement): HTMLElement {
     return node.lastChild as HTMLElement;
   }
-}
 
-
-/**
- * The namespace for the `TabFactory` class statics.
- */
-export
-namespace TabFactory {
-  /**
-   * A singleton instance of the `TabFactory` class.
-   *
-   * #### Notes
-   * This is default tab factory instance used by `TabBar`.
-   */
-  export
-  const instance = new TabFactory();
+  private _options: ITabBarOptions;
 }
 
 
@@ -1311,13 +1349,14 @@ namespace Private {
    * Test if the event exceeds the drag detach threshold.
    */
   export
-  function detachExceeded(data: DragData, event: MouseEvent): boolean {
+  function detachExceeded(data: DragData, event: MouseEvent, options: ITabBarOptions): boolean {
     let rect = data.contentRect;
+    const detachThreshold = options.detachThreshold;
     return (
-      (event.clientX < rect.left - DETACH_THRESHOLD) ||
-      (event.clientX >= rect.right + DETACH_THRESHOLD) ||
-      (event.clientY < rect.top - DETACH_THRESHOLD) ||
-      (event.clientY >= rect.bottom + DETACH_THRESHOLD)
+      (event.clientX < rect.left - detachThreshold) ||
+      (event.clientX >= rect.right + detachThreshold) ||
+      (event.clientY < rect.top - detachThreshold) ||
+      (event.clientY >= rect.bottom + detachThreshold)
     );
   }
 

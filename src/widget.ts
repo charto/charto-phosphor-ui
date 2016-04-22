@@ -30,17 +30,39 @@ import {
   Title
 } from './title';
 
+/**
+ * Phosphor widgets configuration.
+ *
+ * #### Notes
+ *
+ * Optional members are configuration objects for each individual widget type.
+ */
+export interface IPhosphorOptions {
+  widgetOptions?: IWidgetOptions;
+}
 
 /**
- * The class name added to Widget instances.
+ * Base widget configuration type.
  */
-const WIDGET_CLASS = 'p-Widget';
+export interface IWidgetOptions {
+  /**
+   * The class name added to Widget instances.
+   */
+  widgetClass?: string;
+
+  /**
+   * The class name added to hidden widgets.
+   */
+  hiddenClass?: string;
+}
 
 /**
- * The class name added to hidden widgets.
+ * Base widget default configuration.
  */
-const HIDDEN_CLASS = 'p-mod-hidden';
-
+export const defaultWidgetOptions: IWidgetOptions = {
+  widgetClass: 'p-Widget',
+  hiddenClass: 'p-mod-hidden'
+};
 
 /**
  * The base class of the Phosphor widget hierarchy.
@@ -78,10 +100,33 @@ class Widget implements IDisposable, IMessageHandler {
    * If a node *is* provided, the widget will assume full ownership and
    * control of the node, as if it had created the node itself. This is
    * less common, but is useful when wrapping foreign nodes as widgets.
+   *
+   * @param options - Phosphor widgets configuration.
    */
-  constructor(node?: HTMLElement) {
+  constructor(node?: HTMLElement, options: IPhosphorOptions = {}) {
+    this._options = options;
+    this._widgetOptions = this.cloneOptions(options.widgetOptions, defaultWidgetOptions);
+
     this._node = node || (this.constructor as typeof Widget).createNode();
-    this.addClass(WIDGET_CLASS);
+    this.addClass(this._widgetOptions.widgetClass);
+  }
+
+  cloneOptions<OptionsType>(options: OptionsType, defaultOptions?: OptionsType) {
+    let clonedOptions = {} as OptionsType;
+    let src = defaultOptions as { [name: string]: any } || {};
+    let dst = clonedOptions as { [name: string]: any };
+
+    for(let name of Object.keys(src)) {
+      dst[name] = src[name];
+    }
+
+    src = options as { [name: string]: any } || {};
+
+    for(let name of Object.keys(src)) {
+      dst[name] = src[name];
+    }
+
+    return(clonedOptions);
   }
 
   /**
@@ -426,7 +471,7 @@ class Widget implements IDisposable, IMessageHandler {
       return;
     }
     this.clearFlag(WidgetFlag.IsHidden);
-    this.removeClass(HIDDEN_CLASS);
+    this.removeClass(this._widgetOptions.hiddenClass);
     if (this.isAttached && (!this.parent || this.parent.isVisible)) {
       sendMessage(this, WidgetMessage.AfterShow);
     }
@@ -451,7 +496,7 @@ class Widget implements IDisposable, IMessageHandler {
       sendMessage(this, WidgetMessage.BeforeHide);
     }
     this.setFlag(WidgetFlag.IsHidden);
-    this.addClass(HIDDEN_CLASS);
+    this.addClass(this._widgetOptions.hiddenClass);
     if (this.parent) {
       sendMessage(this.parent, new ChildMessage('child-hidden', this));
     }
@@ -654,6 +699,8 @@ class Widget implements IDisposable, IMessageHandler {
    */
   protected onChildRemoved(msg: ChildMessage): void { }
 
+  private _options: IPhosphorOptions;
+  private _widgetOptions: IWidgetOptions;
   private _flags = 0;
   private _node: HTMLElement;
   private _layout: Layout = null;
